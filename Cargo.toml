@@ -1,0 +1,17 @@
+[package]
+name = "uu"
+version = "0.1.0"
+description = "Reads UTF-8 from stdin and prints info about each code point."
+authors = ["Jake Low <hello@jakelow.com>"]
+homepage = "https://github.com/jake-low/uu"
+repository = "https://github.com/jake-low/uu"
+license = "ISC"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "3", features = ["cargo"] }
+itertools = "0.8"
+tabwriter = "1"
+unic = "0.9"
