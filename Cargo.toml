@@ -11,7 +11,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ascii = "1"
 clap = { version = "3", features = ["cargo"] }
 itertools = "0.8"
 tabwriter = "1"
 unic = "0.9"
+utf-8 = "0.7"

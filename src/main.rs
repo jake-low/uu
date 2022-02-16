@@ -1,4 +1,4 @@
-use clap::{self, App, Arg};
+use clap::{self, App};
 
 mod inspect;
 mod lookup;

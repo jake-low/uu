@@ -2,9 +2,10 @@ use clap::{self, App, Arg, ArgMatches};
 use std::io::{self, Write};
 use tabwriter::TabWriter;
 
-use crate::utils::codepoint;
-use unic::char::basics;
+use unic::char::property::EnumeratedCharProperty;
 use unic::ucd;
+
+use crate::utils;
 
 pub fn cmd() -> App<'static> {
     return App::new("lookup")
@@ -28,14 +29,16 @@ pub fn run(matches: &ArgMatches) {
 
     let mut tw = TabWriter::new(io::stdout());
 
-    write!(&mut tw, "Glyph:\t{}\n", c).unwrap();
+    write!(&mut tw, "Glyph:\t{}\n", utils::repr(c)).unwrap();
+    write!(&mut tw, "Code point:\t{}\n", utils::codepoint(c)).unwrap();
+    write!(&mut tw, "Name:\t{}\n", utils::name_or_alias(c)).unwrap();
+    write!(&mut tw, "Block:\t{}\n", ucd::Block::of(c).unwrap().name).unwrap();
     write!(
         &mut tw,
-        "Code point:\t{}\n",
-        basics::notation::unicode_notation(c)
+        "Category:\t{}\n",
+        ucd::GeneralCategory::of(c).human_name()
     )
     .unwrap();
-    write!(&mut tw, "Block:\t{}\n", ucd::Block::of(c).unwrap().name).unwrap();
 
     tw.flush().unwrap();
 }

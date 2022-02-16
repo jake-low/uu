@@ -1,11 +1,14 @@
-use std::io::{self, BufRead, Write};
+use std::io::{self, Write};
 
 use unic::char::property::EnumeratedCharProperty;
 use unic::ucd;
 
+use utf8;
+
 use clap::{self, App, Arg, ArgMatches};
-use itertools::Itertools;
 use tabwriter::TabWriter;
+
+use crate::utils;
 
 pub fn cmd() -> App<'static> {
     return App::new("inspect")
@@ -24,35 +27,6 @@ pub fn cmd() -> App<'static> {
                 .takes_value(false)
                 .help("Restrict output to ASCII"),
         );
-}
-
-/// Returns a string in U+XXXX format representing the code point for the given Unicode character.
-fn codepoint(c: char) -> String {
-    return format!("U+{:0>4x}", c as u32);
-}
-
-/// Returns a string in hexadecimal (with spaces) representing the bytes that encode this Unicode character in UTF-8.
-fn char_to_bytes_utf8(c: char) -> String {
-    let mut b = [0; 4];
-    let bytes = c.encode_utf8(&mut b).as_bytes();
-
-    format!("{:x}", bytes.iter().format(" "))
-}
-
-fn name(c: char) -> String {
-    ucd::Name::of(c)
-        .map(|name| name.to_string())
-        .unwrap_or_default()
-}
-
-fn name_or_corrective_alias(c: char) -> String {
-    match ucd::name_aliases_of(c, ucd::NameAliasType::NameCorrections)
-        .unwrap_or_default()
-        .first()
-    {
-        Some(v) => format!("* {}", v),
-        None => name(c),
-    }
 }
 
 pub fn run(matches: &ArgMatches) {
@@ -74,17 +48,21 @@ pub fn run(matches: &ArgMatches) {
         .unwrap();
     }
 
-    for line in stdin.lock().lines() {
-        for c in line.unwrap().chars() {
-            let codepoint = codepoint(c);
-            let bytes = char_to_bytes_utf8(c);
-            let name = name_or_corrective_alias(c);
+    let mut decoder = utf8::BufReadDecoder::new(stdin.lock());
+
+    while let Some(result) = decoder.next_strict() {
+        let chunk = result.ok().unwrap();
+        println!("{}", chunk);
+        for c in chunk.chars() {
+            let codepoint = utils::codepoint(c);
+            let bytes = utils::char_to_bytes_utf8(c);
+            let name = utils::name_or_alias(c);
             let block = format!("{}", ucd::Block::of(c).unwrap().name);
             let category = ucd::GeneralCategory::of(c).human_name();
 
             if !matches.is_present("ascii") {
                 // only print the glyphs column if we're not in ASCII-only mode
-                write!(&mut tw, "{}\t", c).unwrap();
+                write!(&mut tw, "{}\t", utils::repr(c)).unwrap();
             }
 
             write!(
