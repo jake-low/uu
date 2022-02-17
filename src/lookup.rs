@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use tabwriter::TabWriter;
 
 use unic::char::property::EnumeratedCharProperty;
-use unic::ucd;
+use unic::ucd; //::{self, BidiClass};
 
 use crate::utils;
 
@@ -33,12 +33,42 @@ pub fn run(matches: &ArgMatches) {
     write!(&mut tw, "Code point:\t{}\n", utils::codepoint(c)).unwrap();
     write!(&mut tw, "Name:\t{}\n", utils::name_or_alias(c)).unwrap();
     write!(&mut tw, "Block:\t{}\n", ucd::Block::of(c).unwrap().name).unwrap();
+
+    let category = ucd::GeneralCategory::of(c);
     write!(
         &mut tw,
-        "Category:\t{}\n",
-        ucd::GeneralCategory::of(c).human_name()
+        "Category:\t{} ({})\n",
+        category.human_name(),
+        category.abbr_name()
     )
     .unwrap();
+
+    let bidi_class = ucd::BidiClass::of(c);
+    write!(
+        &mut tw,
+        "Bidirectional Class:\t{} ({})\n",
+        bidi_class.human_name(),
+        bidi_class.abbr_name()
+    )
+    .unwrap();
+
+    /*
+    let combi_class = ucd::CanonicalCombiningClass::of(c);
+    write!(&mut tw, "Combining Class:\t{}\n", combi_class).unwrap();
+    */
+
+    write!(
+        &mut tw,
+        "Added in version:\t{}\n",
+        ucd::Age::of(c).unwrap().actual()
+    )
+    .unwrap();
+
+    write!(&mut tw, "UTF-8:\t{}\n", utils::char_to_bytes_utf8(c)).unwrap();
+    write!(&mut tw, "UTF-16BE:\t{}\n", utils::char_to_bytes_utf16be(c)).unwrap();
+    write!(&mut tw, "UTF-16LE:\t{}\n", utils::char_to_bytes_utf16le(c)).unwrap();
+    write!(&mut tw, "UTF-32BE:\t{}\n", utils::char_to_bytes_utf32be(c)).unwrap();
+    write!(&mut tw, "UTF-32LE:\t{}\n", utils::char_to_bytes_utf32le(c)).unwrap();
 
     tw.flush().unwrap();
 }
