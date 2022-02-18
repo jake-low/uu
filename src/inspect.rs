@@ -52,7 +52,6 @@ pub fn run(matches: &ArgMatches) {
 
     while let Some(result) = decoder.next_strict() {
         let chunk = result.ok().unwrap();
-        println!("{}", chunk);
         for c in chunk.chars() {
             let codepoint = utils::codepoint(c);
             let bytes = utils::char_to_bytes_utf8(c);
