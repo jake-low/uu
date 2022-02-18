@@ -9,7 +9,7 @@ use crate::utils;
 
 pub fn cmd() -> App<'static> {
     return App::new("lookup")
-        .about("show details about a single Unicode code point")
+        .about("Show details about a single Unicode code point")
         .arg(
             Arg::new("glyph")
                 .index(1)

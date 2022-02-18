@@ -1,7 +1,7 @@
 [package]
 name = "uu"
 version = "0.1.0"
-description = "Reads UTF-8 from stdin and prints info about each code point."
+description = "A tool for inspecting Unicode text"
 authors = ["Jake Low <hello@jakelow.com>"]
 homepage = "https://github.com/jake-low/uu"
 repository = "https://github.com/jake-low/uu"
