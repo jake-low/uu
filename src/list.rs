@@ -1,9 +1,8 @@
 use std::io::{self, Write};
+use std::process;
 
 use unic::char::property::EnumeratedCharProperty;
 use unic::ucd;
-
-use utf8;
 
 use clap::{self, App, Arg, ArgMatches};
 use tabwriter::TabWriter;
@@ -26,19 +25,24 @@ pub fn cmd() -> App<'static> {
                 .long("ascii")
                 .takes_value(false)
                 .help("Restrict output to ASCII"),
+        )
+        .arg(
+            Arg::new("start")
+                .value_name("START")
+                .default_value("U+0000")
+                .index(1)
+                .help("A Unicode code point, in U+XXXX format"),
+        )
+        .arg(
+            Arg::new("end")
+                .value_name("END")
+                .default_value("U+FFFF")
+                .index(2)
+                .help("A Unicode code point, in U+XXXX format"),
         );
 }
 
-fn block(c: char) -> String {
-    match ucd::Block::of(c) {
-        Some(block) => block.name.to_string(),
-        None => String::new(),
-    }
-}
-
 pub fn run(matches: &ArgMatches) {
-    let stdin = io::stdin();
-
     let mut tw = TabWriter::new(io::stdout());
 
     if !matches.is_present("no-header") {
@@ -58,8 +62,35 @@ pub fn run(matches: &ArgMatches) {
     let mut previous_block = "Basic Latin"; // HACK first block
     let mut lines_since_flush = 0;
 
-    // FIXME currently only prints BMP; should be configurable with flags
-    for u in (0 as u32)..=(0xFFFF as u32) {
+    let start = matches.value_of("start").unwrap();
+    if !start.starts_with("U+") {
+        eprintln!("Failed to parse start code point: {}", start);
+        process::exit(1);
+    }
+
+    let start = match u32::from_str_radix(&start[2..], 16) {
+        Ok(value) => value,
+        Err(_) => {
+            eprintln!("Failed to parse start code point: {}", start);
+            process::exit(1);
+        }
+    };
+
+    let end = matches.value_of("end").unwrap();
+    if !end.starts_with("U+") {
+        eprintln!("Failed to parse start code point: {}", end);
+        process::exit(1);
+    }
+
+    let end = match u32::from_str_radix(&end[2..], 16) {
+        Ok(value) => value,
+        Err(_) => {
+            eprintln!("Failed to parse start code point: {}", end);
+            process::exit(1);
+        }
+    };
+
+    for u in start..=end {
         let c = char::from_u32(u);
 
         if c == None {
@@ -94,4 +125,6 @@ pub fn run(matches: &ArgMatches) {
             lines_since_flush = 0;
         }
     }
+
+    tw.flush().unwrap();
 }
