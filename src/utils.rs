@@ -1,4 +1,5 @@
 use unic::char::basics;
+use unic::char::property::EnumeratedCharProperty;
 use unic::ucd;
 
 use ascii::{self, AsciiChar};
@@ -94,4 +95,52 @@ pub fn name_or_alias(c: char) -> String {
     }
 
     return name(c);
+}
+
+pub struct CharacterInfo {
+    pub repr: String,
+    pub codepoint: String,
+    pub bytes: String,
+    pub name: String,
+    pub block: String,
+    pub category: String,
+}
+
+impl CharacterInfo {
+    pub fn from_char(c: char) -> CharacterInfo {
+        let repr = repr(c);
+        let codepoint = codepoint(c);
+        let bytes = char_to_bytes_utf8(c);
+        let name = name_or_alias(c);
+        let block = ucd::Block::of(c)
+            .map(|block| block.name)
+            .unwrap_or("")
+            .to_string();
+        let category = ucd::GeneralCategory::of(c).human_name().to_string();
+
+        return CharacterInfo {
+            repr,
+            codepoint,
+            bytes,
+            name,
+            block,
+            category,
+        };
+    }
+
+    pub fn to_record(self, ascii_only: bool) -> Vec<String> {
+        let mut record = vec![
+            self.codepoint,
+            self.bytes,
+            self.name,
+            self.block,
+            self.category,
+        ];
+
+        if !ascii_only {
+            record.insert(0, self.repr);
+        }
+
+        return record;
+    }
 }

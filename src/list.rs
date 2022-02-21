@@ -1,13 +1,10 @@
-use std::io::{self, Write};
+use std::io;
 use std::process;
-
-use unic::char::property::EnumeratedCharProperty;
-use unic::ucd;
 
 use clap::{self, App, Arg, ArgMatches};
 use tabwriter::TabWriter;
 
-use crate::utils;
+use crate::utils::CharacterInfo;
 
 pub fn cmd() -> App<'static> {
     return App::new("list")
@@ -43,23 +40,21 @@ pub fn cmd() -> App<'static> {
 }
 
 pub fn run(matches: &ArgMatches) {
-    let mut tw = TabWriter::new(io::stdout());
+    let tw = TabWriter::new(io::stdout());
+    let mut wtr = csv::WriterBuilder::new().delimiter(b'\t').from_writer(tw);
+
+    let ascii_only = matches.is_present("ascii");
 
     if !matches.is_present("no-header") {
-        if !matches.is_present("ascii") {
+        if !ascii_only {
             // only print the glyphs column if we're not in ASCII-only mode
-            write!(&mut tw, "GLYPH\t").unwrap();
+            wtr.write_field("GLYPH").unwrap();
         }
-
-        write!(
-            &mut tw,
-            "{}\t{}\t{}\t{}\t{}\n",
-            "CODE POINT", "UTF-8 BYTES", "NAME", "BLOCK", "CATEGORY"
-        )
-        .unwrap();
+        wtr.write_record(["CODE POINT", "UTF-8 BYTES", "NAME", "BLOCK", "CATEGORY"])
+            .unwrap();
     }
 
-    let mut previous_block = "Basic Latin"; // HACK first block
+    let mut previous_block: Option<String> = None;
     let mut lines_since_flush = 0;
 
     let start = matches.value_of("start").unwrap();
@@ -90,41 +85,34 @@ pub fn run(matches: &ArgMatches) {
         }
     };
 
+    println!("{:x} {:x}", start, end);
+
     for u in start..=end {
         let c = char::from_u32(u);
-
         if c == None {
             continue;
         }
         let c = c.unwrap();
 
-        // TODO most of this logic is duplicated with 'inspect'
-        let codepoint = utils::codepoint(c);
-        let bytes = utils::char_to_bytes_utf8(c);
-        let name = utils::name_or_alias(c);
-        let block = ucd::Block::of(c).map(|b| b.name).unwrap_or("");
-        let category = ucd::GeneralCategory::of(c).human_name();
+        let codeinfo = CharacterInfo::from_char(c);
+        let should_flush = match &previous_block {
+            Some(prev) => codeinfo.block != prev.clone() || lines_since_flush >= 4096,
+            None => false,
+        };
 
-        if !matches.is_present("ascii") {
-            // only print the glyphs column if we're not in ASCII-only mode
-            write!(&mut tw, "{}\t", utils::repr(c)).unwrap();
-        }
+        // if should_flush {
+        previous_block = Some(codeinfo.block.clone());
+        // }
 
-        write!(
-            &mut tw,
-            "{}\t{}\t{}\t{}\t{}\n",
-            codepoint, bytes, name, block, category
-        )
-        .unwrap();
+        wtr.write_record(codeinfo.to_record(ascii_only)).unwrap();
 
         lines_since_flush += 1;
 
-        if block != previous_block || lines_since_flush > 4096 {
-            tw.flush().unwrap();
-            previous_block = block;
+        if should_flush {
+            wtr.flush().unwrap();
             lines_since_flush = 0;
         }
     }
 
-    tw.flush().unwrap();
+    wtr.flush().unwrap();
 }

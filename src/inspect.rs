@@ -1,14 +1,11 @@
-use std::io::{self, Write};
-
-use unic::char::property::EnumeratedCharProperty;
-use unic::ucd;
+use std::io;
 
 use utf8;
 
 use clap::{self, App, Arg, ArgMatches};
 use tabwriter::TabWriter;
 
-use crate::utils;
+use crate::utils::CharacterInfo;
 
 pub fn cmd() -> App<'static> {
     return App::new("inspect")
@@ -31,47 +28,40 @@ pub fn cmd() -> App<'static> {
 
 pub fn run(matches: &ArgMatches) {
     let stdin = io::stdin();
+    let mut decoder = utf8::BufReadDecoder::new(stdin.lock());
 
-    let mut tw = TabWriter::new(io::stdout());
+    let tw = TabWriter::new(io::stdout());
+    let mut wtr = csv::WriterBuilder::new().delimiter(b'\t').from_writer(tw);
+
+    let ascii_only = matches.is_present("ascii");
 
     if !matches.is_present("no-header") {
-        if !matches.is_present("ascii") {
+        if !ascii_only {
             // only print the glyphs column if we're not in ASCII-only mode
-            write!(&mut tw, "GLYPH\t").unwrap();
+            wtr.write_field("GLYPH").unwrap();
         }
-
-        write!(
-            &mut tw,
-            "{}\t{}\t{}\t{}\t{}\n",
-            "CODE POINT", "UTF-8 BYTES", "NAME", "BLOCK", "CATEGORY"
-        )
-        .unwrap();
+        wtr.write_record(["CODE POINT", "UTF-8 BYTES", "NAME", "BLOCK", "CATEGORY"])
+            .unwrap();
     }
-
-    let mut decoder = utf8::BufReadDecoder::new(stdin.lock());
 
     while let Some(result) = decoder.next_strict() {
         let chunk = result.ok().unwrap();
         for c in chunk.chars() {
-            let codepoint = utils::codepoint(c);
-            let bytes = utils::char_to_bytes_utf8(c);
-            let name = utils::name_or_alias(c);
-            let block = format!("{}", ucd::Block::of(c).unwrap().name);
-            let category = ucd::GeneralCategory::of(c).human_name();
+            let codeinfo = CharacterInfo::from_char(c);
+            wtr.write_record(codeinfo.to_record(ascii_only)).unwrap();
+            // if !matches.is_present("ascii") {
+            //     // only print the glyphs column if we're not in ASCII-only mode
+            //     write!(&mut tw, "{}\t", utils::repr(c)).unwrap();
+            // }
 
-            if !matches.is_present("ascii") {
-                // only print the glyphs column if we're not in ASCII-only mode
-                write!(&mut tw, "{}\t", utils::repr(c)).unwrap();
-            }
-
-            write!(
-                &mut tw,
-                "{}\t{}\t{}\t{}\t{}\n",
-                codepoint, bytes, name, block, category
-            )
-            .unwrap();
+            // write!(
+            //     &mut tw,
+            //     "{}\t{}\t{}\t{}\t{}\n",
+            //     codepoint, bytes, name, block, category
+            // )
+            // .unwrap();
         }
 
-        tw.flush().unwrap();
+        wtr.flush().unwrap();
     }
 }
