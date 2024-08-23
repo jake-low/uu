@@ -19,28 +19,28 @@ pub fn run(args: &CliArgs) -> CliResult<()> {
     let c: char = if args.glyph.starts_with("U+") {
         char::from_u32(u32::from_str_radix(&args.glyph[2..], 16).ok().unwrap()).unwrap()
     } else {
-        args.glyph.chars().nth(0).unwrap()
+        args.glyph.chars().next().unwrap()
     };
 
     let mut tw = TabWriter::new(io::stdout());
 
-    write!(&mut tw, "Glyph:\t{}\n", utils::repr(c))?;
-    write!(&mut tw, "Code point:\t{}\n", utils::codepoint(c))?;
-    write!(&mut tw, "Name:\t{}\n", utils::name_or_alias(c))?;
-    write!(&mut tw, "Block:\t{}\n", ucd::Block::of(c).unwrap().name)?;
+    writeln!(&mut tw, "Glyph:\t{}", utils::repr(c))?;
+    writeln!(&mut tw, "Code point:\t{}", utils::codepoint(c))?;
+    writeln!(&mut tw, "Name:\t{}", utils::name_or_alias(c))?;
+    writeln!(&mut tw, "Block:\t{}", ucd::Block::of(c).unwrap().name)?;
 
     let category = ucd::GeneralCategory::of(c);
-    write!(
+    writeln!(
         &mut tw,
-        "Category:\t{} ({})\n",
+        "Category:\t{} ({})",
         category.human_name(),
         category.abbr_name()
     )?;
 
     let bidi_class = ucd::BidiClass::of(c);
-    write!(
+    writeln!(
         &mut tw,
-        "Bidirectional Class:\t{} ({})\n",
+        "Bidirectional Class:\t{} ({})",
         bidi_class.human_name(),
         bidi_class.abbr_name()
     )?;
@@ -50,17 +50,17 @@ pub fn run(args: &CliArgs) -> CliResult<()> {
     write!(&mut tw, "Combining Class:\t{}\n", combi_class).unwrap();
     */
 
-    write!(
+    writeln!(
         &mut tw,
-        "Added in version:\t{}\n",
+        "Added in version:\t{}",
         ucd::Age::of(c).unwrap().actual()
     )?;
 
-    write!(&mut tw, "UTF-8:\t{}\n", utils::char_to_bytes_utf8(c))?;
-    write!(&mut tw, "UTF-16BE:\t{}\n", utils::char_to_bytes_utf16be(c))?;
-    write!(&mut tw, "UTF-16LE:\t{}\n", utils::char_to_bytes_utf16le(c))?;
-    write!(&mut tw, "UTF-32BE:\t{}\n", utils::char_to_bytes_utf32be(c))?;
-    write!(&mut tw, "UTF-32LE:\t{}\n", utils::char_to_bytes_utf32le(c))?;
+    writeln!(&mut tw, "UTF-8:\t{}", utils::char_to_bytes_utf8(c))?;
+    writeln!(&mut tw, "UTF-16BE:\t{}", utils::char_to_bytes_utf16be(c))?;
+    writeln!(&mut tw, "UTF-16LE:\t{}", utils::char_to_bytes_utf16le(c))?;
+    writeln!(&mut tw, "UTF-32BE:\t{}", utils::char_to_bytes_utf32be(c))?;
+    writeln!(&mut tw, "UTF-32LE:\t{}", utils::char_to_bytes_utf32le(c))?;
 
     tw.flush()?;
 

@@ -2,8 +2,8 @@ use std::fmt;
 use std::io;
 use std::str;
 
-use clap;
-use csv;
+
+
 
 pub type CliResult<T> = Result<T, CliError>;
 
@@ -21,7 +21,7 @@ impl fmt::Display for CliError {
             CliError::Arg(ref e) => e.fmt(f),
             CliError::Csv(ref e) => e.fmt(f),
             CliError::Io(ref e) => e.fmt(f),
-            CliError::Other(ref s) => f.write_str(&**s),
+            CliError::Other(ref s) => f.write_str(s),
         }
     }
 }

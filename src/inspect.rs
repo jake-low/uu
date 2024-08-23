@@ -2,7 +2,6 @@ use std::io;
 
 use clap::Parser;
 use tabwriter::TabWriter;
-use utf8;
 
 use crate::errors::{CliError, CliResult};
 use crate::utils::CharacterInfo;
@@ -39,7 +38,7 @@ pub fn run(args: &CliArgs) -> CliResult<()> {
             Ok(chunk) => {
                 for c in chunk.chars() {
                     let codeinfo = CharacterInfo::from_char(c);
-                    wtr.write_record(codeinfo.to_record(args.ascii))?;
+                    wtr.write_record(codeinfo.into_record(args.ascii))?;
                 }
 
                 wtr.flush()?;

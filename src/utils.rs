@@ -1,4 +1,3 @@
-use unic::char::basics;
 use unic::char::property::EnumeratedCharProperty;
 use unic::ucd;
 
@@ -8,12 +7,12 @@ use itertools::Itertools;
 /// Returns a string containing the input char, or an ASCII representation of it
 /// if it's a control character.
 pub fn repr(c: char) -> String {
-    if let Some(ascii_char) = AsciiChar::from_ascii(c).ok() {
+    if let Ok(ascii_char) = AsciiChar::from_ascii(c) {
         if let Some(caret_escape) = ascii::caret_encode(ascii_char) {
             return format!("^{}", caret_escape.as_char());
         }
     }
-    return c.to_string();
+    c.to_string()
 }
 
 /// Returns a string in U+XXXX format representing the code point for the given Unicode character.
@@ -37,8 +36,7 @@ pub fn char_to_bytes_utf16le(c: char) -> String {
     let utf16 = c.encode_utf16(&mut buf);
     let bytes: Vec<u8> = utf16
         .iter()
-        .map(|i| i.to_le_bytes().to_vec())
-        .flatten()
+        .flat_map(|i| i.to_le_bytes().to_vec())
         .collect();
 
     format!("{:0>2x}", bytes.iter().format(" "))
@@ -51,8 +49,7 @@ pub fn char_to_bytes_utf16be(c: char) -> String {
     let utf16 = c.encode_utf16(&mut buf);
     let bytes: Vec<u8> = utf16
         .iter()
-        .map(|i| i.to_be_bytes().to_vec())
-        .flatten()
+        .flat_map(|i| i.to_be_bytes().to_vec())
         .collect();
 
     format!("{:0>2x}", bytes.iter().format(" "))
@@ -93,7 +90,7 @@ pub fn name_or_alias(c: char) -> String {
         return format!("<{}>", control);
     }
 
-    return name(c);
+    name(c)
 }
 
 pub struct CharacterInfo {
@@ -117,17 +114,17 @@ impl CharacterInfo {
             .to_string();
         let category = ucd::GeneralCategory::of(c).human_name().to_string();
 
-        return CharacterInfo {
+        CharacterInfo {
             repr,
             codepoint,
             bytes,
             name,
             block,
             category,
-        };
+        }
     }
 
-    pub fn to_record(self, ascii_only: bool) -> Vec<String> {
+    pub fn into_record(self, ascii_only: bool) -> Vec<String> {
         let mut record = vec![
             self.codepoint,
             self.bytes,
@@ -140,7 +137,7 @@ impl CharacterInfo {
             record.insert(0, self.repr);
         }
 
-        return record;
+        record
     }
 }
 

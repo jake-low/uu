@@ -84,7 +84,7 @@ pub fn run(args: &CliArgs) -> CliResult<()> {
 
                 previous_block = Some(codeinfo.block.clone());
 
-                wtr.write_record(codeinfo.to_record(args.ascii))?;
+                wtr.write_record(codeinfo.into_record(args.ascii))?;
 
                 lines_since_flush += 1;
 
