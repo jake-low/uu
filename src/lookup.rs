@@ -1,32 +1,26 @@
-use clap::{self, App, Arg, ArgMatches};
 use std::io::{self, Write};
-use tabwriter::TabWriter;
 
+use clap::Parser;
+use tabwriter::TabWriter;
 use unic::char::property::EnumeratedCharProperty;
 use unic::ucd; //::{self, BidiClass};
 
 use crate::errors::CliResult;
 use crate::utils;
 
-pub fn cmd() -> App<'static> {
-    return App::new("lookup")
-        .about("Show details about a single Unicode code point")
-        .arg(
-            Arg::new("glyph")
-                .index(1)
-                .help("Either a single UTF-8 glyph, or a string in U+XXXX format"),
-        );
+/// Show details about a single Unicode code point
+#[derive(Parser)]
+pub struct CliArgs {
+    /// Either a single UTF-8 glyph, or a string in U+XXXX format
+    glyph: String,
 }
 
-pub fn run(matches: &ArgMatches) -> CliResult<()> {
-    let glyph = matches.value_of("glyph").unwrap();
-    let c: char;
-
-    if glyph.starts_with("U+") {
-        c = char::from_u32(u32::from_str_radix(&glyph[2..], 16).ok().unwrap()).unwrap();
+pub fn run(args: &CliArgs) -> CliResult<()> {
+    let c: char = if args.glyph.starts_with("U+") {
+        char::from_u32(u32::from_str_radix(&args.glyph[2..], 16).ok().unwrap()).unwrap()
     } else {
-        c = glyph.chars().nth(0).unwrap();
-    }
+        args.glyph.chars().nth(0).unwrap()
+    };
 
     let mut tw = TabWriter::new(io::stdout());
 

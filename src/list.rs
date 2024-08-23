@@ -1,52 +1,34 @@
 use std::io;
 
-use clap::{self, App, Arg, ArgMatches};
+use clap::Parser;
 use tabwriter::TabWriter;
 
 use crate::errors::{CliError, CliResult};
-
 use crate::utils::CharacterInfo;
-pub fn cmd() -> App<'static> {
-    return App::new("list")
-        .about("Print a table of all Unicode code points (useful for grepping)")
-        .arg(
-            Arg::new("no-header")
-                .short('H')
-                .long("no-header")
-                .takes_value(false)
-                .help("Don't print a header row"),
-        )
-        .arg(
-            Arg::new("ascii")
-                .short('a')
-                .long("ascii")
-                .takes_value(false)
-                .help("Restrict output to ASCII"),
-        )
-        .arg(
-            Arg::new("start")
-                .value_name("START")
-                .default_value("U+0000")
-                .index(1)
-                .help("A Unicode code point, in U+XXXX format"),
-        )
-        .arg(
-            Arg::new("end")
-                .value_name("END")
-                .default_value("U+FFFF")
-                .index(2)
-                .help("A Unicode code point, in U+XXXX format"),
-        );
+
+/// Print a table of all Unicode code points (useful for grepping)
+#[derive(Parser)]
+pub struct CliArgs {
+    /// Don't print a header row
+    #[arg(short = 'H', long)]
+    no_header: bool,
+
+    /// Restrict output to ASCII
+    #[arg(short = 'a', long)]
+    ascii: bool,
+
+    /// Unicode code point to begin at, in U+XXXX format
+    start: String,
+    /// Unicode code point to stop at, in U+XXXX format
+    end: String,
 }
 
-pub fn run(matches: &ArgMatches) -> CliResult<()> {
+pub fn run(args: &CliArgs) -> CliResult<()> {
     let tw = TabWriter::new(io::stdout());
     let mut wtr = csv::WriterBuilder::new().delimiter(b'\t').from_writer(tw);
 
-    let ascii_only = matches.is_present("ascii");
-
-    if !matches.is_present("no-header") {
-        if !ascii_only {
+    if !args.no_header {
+        if !args.ascii {
             // only print the glyphs column if we're not in ASCII-only mode
             wtr.write_field("GLYPH")?;
         }
@@ -56,38 +38,36 @@ pub fn run(matches: &ArgMatches) -> CliResult<()> {
     let mut previous_block: Option<String> = None;
     let mut lines_since_flush = 0;
 
-    let start = matches.value_of("start").unwrap();
-    if !start.starts_with("U+") {
+    if !args.start.starts_with("U+") {
         return Err(CliError::Other(format!(
             "Failed to parse start code point: {}",
-            start
+            args.start
         )));
     }
 
-    let start = match u32::from_str_radix(&start[2..], 16) {
+    let start = match u32::from_str_radix(&args.start[2..], 16) {
         Ok(value) => value,
         Err(_) => {
             return Err(CliError::Other(format!(
                 "Failed to parse start code point: {}",
-                start
+                args.start
             )));
         }
     };
 
-    let end = matches.value_of("end").unwrap();
-    if !end.starts_with("U+") {
+    if !args.end.starts_with("U+") {
         return Err(CliError::Other(format!(
             "Failed to parse end code point: {}",
-            start
+            args.end
         )));
     }
 
-    let end = match u32::from_str_radix(&end[2..], 16) {
+    let end = match u32::from_str_radix(&args.end[2..], 16) {
         Ok(value) => value,
         Err(_) => {
             return Err(CliError::Other(format!(
                 "Failed to parse end code point: {}",
-                start
+                args.end
             )));
         }
     };
@@ -104,7 +84,7 @@ pub fn run(matches: &ArgMatches) -> CliResult<()> {
 
                 previous_block = Some(codeinfo.block.clone());
 
-                wtr.write_record(codeinfo.to_record(ascii_only))?;
+                wtr.write_record(codeinfo.to_record(args.ascii))?;
 
                 lines_since_flush += 1;
 

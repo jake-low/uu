@@ -1,7 +1,7 @@
 use std::io;
 use std::process;
 
-use clap::{self, App, AppSettings};
+use clap::{Parser, Subcommand};
 
 mod errors;
 mod inspect;
@@ -11,24 +11,27 @@ mod utils;
 
 use errors::CliError;
 
-fn app() -> App<'static> {
-    return App::new(clap::crate_name!())
-        .version(clap::crate_version!())
-        .about(clap::crate_description!())
-        .setting(AppSettings::ArgRequiredElseHelp)
-        .subcommand(inspect::cmd())
-        .subcommand(list::cmd())
-        .subcommand(lookup::cmd());
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct CliArgs {
+    #[command(subcommand)]
+    subcommand: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    Inspect(inspect::CliArgs),
+    List(list::CliArgs),
+    Lookup(lookup::CliArgs),
 }
 
 fn main() {
-    let matches = app().get_matches();
+    let matches = CliArgs::parse();
 
-    let result = match matches.subcommand() {
-        Some(("inspect", m)) => inspect::run(m),
-        Some(("list", m)) => list::run(m),
-        Some(("lookup", m)) => lookup::run(m),
-        _ => unreachable!(),
+    let result = match matches.subcommand {
+        Command::Inspect(args) => inspect::run(&args),
+        Command::List(args) => list::run(&args),
+        Command::Lookup(args) => lookup::run(&args),
     };
 
     match result {
