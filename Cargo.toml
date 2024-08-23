@@ -1,6 +1,6 @@
 [package]
 name = "uu"
-version = "0.1.0"
+version = "0.2.0"
 description = "A tool for inspecting Unicode text"
 authors = ["Jake Low <hello@jakelow.com>"]
 homepage = "https://github.com/jake-low/uu"
