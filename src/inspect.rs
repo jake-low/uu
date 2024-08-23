@@ -8,7 +8,7 @@ use crate::errors::{CliError, CliResult};
 use crate::utils::CharacterInfo;
 
 /// Reads UTF-8 from stdin and prints info about each code point
-#[derive(Parser)]
+#[derive(Parser, Default)]
 pub struct CliArgs {
     /// Don't print a header row
     #[arg(short = 'H', long)]

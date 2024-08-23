@@ -15,7 +15,7 @@ use errors::CliError;
 #[command(version, about, long_about = None)]
 struct CliArgs {
     #[command(subcommand)]
-    subcommand: Command,
+    subcommand: Option<Command>,
 }
 
 #[derive(Subcommand)]
@@ -29,9 +29,11 @@ fn main() {
     let matches = CliArgs::parse();
 
     let result = match matches.subcommand {
-        Command::Inspect(args) => inspect::run(&args),
-        Command::List(args) => list::run(&args),
-        Command::Lookup(args) => lookup::run(&args),
+        Some(Command::Inspect(args)) => inspect::run(&args),
+        Some(Command::List(args)) => list::run(&args),
+        Some(Command::Lookup(args)) => lookup::run(&args),
+        // if no arguments are given, default to running 'uu inspect'
+        None => inspect::run(&inspect::CliArgs::default()),
     };
 
     match result {
